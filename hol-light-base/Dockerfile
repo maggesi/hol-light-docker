@@ -7,25 +7,31 @@
 ### Basic setup.
 ### ---------------------------------------------------------------------------
 
-FROM debian:stretch
+FROM debian:stretch AS debian
 
 RUN apt-get update && apt-get -y upgrade
-
-RUN apt-get -y install git-core ocaml-base-nox camlp5 make wget unzip
 
 ### ---------------------------------------------------------------------------
 ### Add a new user for HOL Light.
 ### ---------------------------------------------------------------------------
 
+FROM debian AS holbox-base
+
+RUN apt-get -y install ocaml-base-nox camlp5
+
 RUN adduser holuser --disabled-password --gecos ""
 
 WORKDIR /home/holuser
 
-USER holuser
-
 ### ---------------------------------------------------------------------------
 ### Install HOL Light (currently version 2018-11-05)
 ### ---------------------------------------------------------------------------
+
+FROM holbox-base AS holbox-build
+
+RUN apt-get -y install git-core make wget unzip
+
+USER holuser
 
 ARG COMMIT=ef1b0d4e58112bb1482abad3d1f4e2e308b729b0
 
@@ -37,19 +43,16 @@ WORKDIR hol-light
 RUN make
 
 ### ---------------------------------------------------------------------------
-### Cleanup.
+### HOL Light base optimized image
 ### ---------------------------------------------------------------------------
 
-USER root
+FROM holbox-base
 
-RUN apt-get -y remove --purge git-core make wget unzip && \
-    apt -y autoremove
+COPY --from=holbox-build /home/holuser/hol-light /home/holuser/hol-light
 
 USER holuser
 
-### ---------------------------------------------------------------------------
-### Entrypoint and default parameters.
-### ---------------------------------------------------------------------------
+WORKDIR /home/holuser/hol-light
 
 ENTRYPOINT ["bash"]
 
