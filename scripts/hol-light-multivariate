@@ -1,0 +1,6 @@
+#!/bin/sh
+
+CWD="$(pwd)"
+LOADDIR="$(dirname $CWD)"
+
+exec docker run --rm -it -h holbox -v "$LOADDIR:/src" hol-light-multivariate
