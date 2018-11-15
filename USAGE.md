@@ -52,6 +52,7 @@ Build the other images (prepare checkpointing)
 ```
 docker build --target holbox-build -t holbox-build hol-light-base
 docker build --target hol-light-base -t hol-light-base hol-light-base
+docker build --target hol-light-elpi -t hol-light-elpi hol-light-base
 docker build --target hol-light-ckpt -t hol-light-ckpt hol-light-base
 ```
 

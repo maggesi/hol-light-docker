@@ -12,7 +12,9 @@ FROM ocaml/opam2:debian-stable AS holbox-base
 
 USER root
 
-RUN apt-get update && apt-get -y upgrade
+RUN apt-get update && \
+    apt-get -y upgrade && \
+    apt-get -y install rlwrap
 
 USER opam
 
@@ -84,6 +86,27 @@ FROM holbox-base AS hol-light-base
 COPY --chown=opam:opam --from=holbox-build /home/opam/hol-light /home/opam/hol-light
 
 USER opam
+
+WORKDIR /home/opam/hol-light
+
+CMD eval `opam config env` && ocaml -I `camlp5 -where` -init make.ml
+
+### ---------------------------------------------------------------------------
+### Target: hol-light-elpi
+### Image with HOL Light (and OCaml) and Elpi (lambda-prolog
+### interpreter) installed and nothing else (no Dmtpc, no
+### checkpoints).
+### ---------------------------------------------------------------------------
+
+FROM hol-light-base AS hol-light-elpi
+
+USER root
+
+RUN apt-get install -y m4
+
+USER opam
+
+RUN eval `opam config env` && opam install -y elpi
 
 WORKDIR /home/opam/hol-light
 
