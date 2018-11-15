@@ -5,19 +5,20 @@
 
 ### ---------------------------------------------------------------------------
 ### Target: holbox-base
-### Debian image with updates and minimal software installed (OCaml) and
-### configurations (a dedicated "holuser").
+### Debian image with opam, updates and minimal software installed (OCaml).
 ### ---------------------------------------------------------------------------
 
-FROM debian:stretch AS holbox-base
+FROM ocaml/opam2:debian-stable AS holbox-base
+
+USER root
 
 RUN apt-get update && apt-get -y upgrade
 
-RUN apt-get -y install ocaml-base-nox camlp5
+USER opam
 
-RUN adduser holuser --disabled-password --gecos ""
-
-WORKDIR /home/holuser
+RUN opam update && opam upgrade && \
+    opam switch create 4.04.1 ocaml-base-compiler.4.04.1 && \
+    opam pin camlp5 6.17 && opam install camlp5
 
 ### ---------------------------------------------------------------------------
 ### Target: holbox-build
@@ -27,14 +28,19 @@ WORKDIR /home/holuser
 
 FROM holbox-base AS holbox-build
 
+USER root
+
 # Screen is needed for manual checkpointing.
 RUN apt-get -y install build-essential curl make screen
 
+USER opam
+
+## --------------------------------------------------
 ## Install Dmtcp (version 2018-11-12)
 
-RUN mkdir -p /src/dmtcp
+RUN mkdir -p src/dmtcp
 
-WORKDIR /src/dmtcp
+WORKDIR src/dmtcp
 
 ARG DMTCP_VERSION=99c5941fe7465c614cd2971de554cc7a81280d79
 
@@ -44,13 +50,18 @@ RUN ./configure --prefix=/usr/local
 
 RUN make -j 2
 
+USER root
+
 RUN make install
 
+USER opam
+
+## --------------------------------------------------
 ## Install HOL Light (currently version 2018-11-12)
 
-WORKDIR /home/holuser
+WORKDIR /home/opam
 
-USER holuser
+USER opam
 
 RUN mkdir -p hol-light
 
@@ -60,7 +71,7 @@ ARG HOL_LIGHT_VERSION=9a22c3609a43933c654b15aeeb4d549a25918b71
 
 RUN curl -sL https://github.com/jrh13/hol-light/archive/$HOL_LIGHT_VERSION.tar.gz | tar xz --strip-components=1
 
-RUN make
+RUN eval `opam config env` && make
 
 ### ---------------------------------------------------------------------------
 ### Target: hol-light-base
@@ -70,16 +81,13 @@ RUN make
 
 FROM holbox-base AS hol-light-base
 
-COPY --chown=holuser:holuser --from=holbox-build /home/holuser/hol-light /home/holuser/hol-light
+COPY --chown=opam:opam --from=holbox-build /home/opam/hol-light /home/opam/hol-light
 
-USER holuser
+USER opam
 
-WORKDIR /home/holuser/hol-light
+WORKDIR /home/opam/hol-light
 
-## ENTRYPOINT ["bash"]
-## CMD ["-c", "ocaml -I `camlp5 -where` -init make.ml"]
-
-CMD ["ocaml -I `camlp5 -where` -init make.ml"]
+CMD eval `opam config env` && ocaml -I `camlp5 -where` -init make.ml
 
 ### ---------------------------------------------------------------------------
 ### Target: hol-light-ckpt
@@ -91,7 +99,7 @@ FROM hol-light-base AS hol-light-ckpt
 # Screen is needed for manual checkpointing.
 USER root
 RUN apt-get -y install screen
-USER holuser
+USER opam
 
 COPY --from=holbox-build /usr/local/ /usr/local/
 
