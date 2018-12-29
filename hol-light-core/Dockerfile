@@ -4,7 +4,7 @@
 
 FROM hol-light-ckpt AS hol-light-core
 
-COPY --chown=holuser:holuser --from=holbox-ckpt /home/holuser/hol-light/ckpt_core /home/holuser/hol-light/dmtcp_restart_script*.sh /home/holuser/hol-light/
+COPY --chown=opam:opam --from=holbox-ckpt /home/opam/hol-light/ckpt_core /home/opam/hol-light/dmtcp_restart_script*.sh /home/opam/hol-light/
 
 ENTRYPOINT ["./dmtcp_restart_script.sh"]
 
@@ -14,7 +14,7 @@ ENTRYPOINT ["./dmtcp_restart_script.sh"]
 
 FROM hol-light-ckpt AS hol-light-multivariate
 
-COPY --chown=holuser:holuser --from=holbox-ckpt /home/holuser/hol-light/ckpt_multivariate /home/holuser/hol-light/dmtcp_restart_script*.sh /home/holuser/hol-light/
+COPY --chown=opam:opam --from=holbox-ckpt /home/opam/hol-light/ckpt_multivariate /home/opam/hol-light/dmtcp_restart_script*.sh /home/opam/hol-light/
 
 ENTRYPOINT ["./dmtcp_restart_script.sh"]
 
@@ -24,7 +24,7 @@ ENTRYPOINT ["./dmtcp_restart_script.sh"]
 
 FROM hol-light-ckpt AS hol-light-complex
 
-COPY --chown=holuser:holuser --from=holbox-ckpt /home/holuser/hol-light/ckpt_complex /home/holuser/hol-light/dmtcp_restart_script*.sh /home/holuser/hol-light/
+COPY --chown=opam:opam --from=holbox-ckpt /home/opam/hol-light/ckpt_complex /home/opam/hol-light/dmtcp_restart_script*.sh /home/opam/hol-light/
 
 ENTRYPOINT ["./dmtcp_restart_script.sh"]
 
@@ -34,6 +34,6 @@ ENTRYPOINT ["./dmtcp_restart_script.sh"]
 
 FROM hol-light-ckpt AS hol-light-hypercomplex
 
-COPY --chown=holuser:holuser --from=holbox-ckpt /home/holuser/hol-light/ckpt_hypercomplex /home/holuser/hol-light/dmtcp_restart_script*.sh /home/holuser/hol-light/
+COPY --chown=opam:opam --from=holbox-ckpt /home/opam/hol-light/ckpt_hypercomplex /home/opam/hol-light/dmtcp_restart_script*.sh /home/opam/hol-light/
 
 ENTRYPOINT ["./dmtcp_restart_script.sh"]

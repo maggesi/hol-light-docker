@@ -5,7 +5,7 @@
 
 ### ---------------------------------------------------------------------------
 ### Target: holbox-base
-### Debian image with opam, updates and minimal software installed (OCaml).
+### Debian image with opam and minimal software installed (OCaml).
 ### ---------------------------------------------------------------------------
 
 FROM ocaml/opam2:debian-stable AS holbox-base
@@ -13,12 +13,11 @@ FROM ocaml/opam2:debian-stable AS holbox-base
 USER root
 
 RUN apt-get update && \
-    apt-get -y upgrade && \
     apt-get -y install rlwrap
 
 USER opam
 
-RUN opam update && opam upgrade && \
+RUN opam update && \
     opam switch create 4.04.1 ocaml-base-compiler.4.04.1 && \
     opam pin camlp5 6.17 && opam install camlp5
 
@@ -33,7 +32,7 @@ FROM holbox-base AS holbox-build
 USER root
 
 # Screen is needed for manual checkpointing.
-RUN apt-get -y install build-essential curl make screen
+RUN apt-get -y install build-essential curl make screen tmux
 
 USER opam
 
@@ -59,7 +58,7 @@ RUN make install
 USER opam
 
 ## --------------------------------------------------
-## Install HOL Light (currently version 2018-11-12)
+## Install HOL Light
 
 WORKDIR /home/opam
 
@@ -69,7 +68,13 @@ RUN mkdir -p hol-light
 
 WORKDIR hol-light
 
-ARG HOL_LIGHT_VERSION=9a22c3609a43933c654b15aeeb4d549a25918b71
+# Version 2018-11-12
+# ARG HOL_LIGHT_VERSION=9a22c3609a43933c654b15aeeb4d549a25918b71
+# Version 2018-12-09
+# ARG HOL_LIGHT_VERSION=4a2bda88c305b77dc78164466c38bb2c4075c635
+
+# Version 2018-12-09
+ARG HOL_LIGHT_VERSION=6c7df495cd1538bc5956ce004e64e73b071ab22d
 
 RUN curl -sL https://github.com/jrh13/hol-light/archive/$HOL_LIGHT_VERSION.tar.gz | tar xz --strip-components=1
 
@@ -121,7 +126,7 @@ FROM hol-light-base AS hol-light-ckpt
 
 # Screen is needed for manual checkpointing.
 USER root
-RUN apt-get -y install screen
+RUN apt-get -y install screen tmux
 USER opam
 
 COPY --from=holbox-build /usr/local/ /usr/local/

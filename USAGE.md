@@ -3,21 +3,20 @@ Docker image with HOL Light preinstalled
 
 ## Important
 
-HOL Light with Multivariate Analysis **requires at least 2 (or more)
-Gb** of memory!  It might be necessary to set an appropriate memory
-limit in the docker configuration.
+HOL Light with Multivariate Analysis **requires at least 2 Gb**
+(maybe more) of memory!  It might be necessary to set an
+appropriate memory limit in the docker configuration.
 
 ## Notes
 
 - Based on Debian and use OCaml from the Debian distribution.
-- Introduce an user account 'holuser' because dmtcp refuse to start
-  under root.
+- Dmtcp refuse to start under root: we use the "opam" user.
 
 ## Targets of the multistage build
 
 | Image tag         | Description                            |
 |----------------   |-------------------------------------   |
-| `holbox-base`     | Debian & updates + ocaml + holuser     |
+| `holbox-base`     | Debian + ocaml/opam                    |
 | `holbox-build`    | Build tools + HOL Light + Dmtcp        |
 | `hol-light-base`  | Only HOL Light installed               |
 | `hol-light-ckpt`  | HOL Light + Dmtcp                      |
@@ -35,13 +34,12 @@ limit in the docker configuration.
 
 Build and test HOL Light "base" (no Dmtcp, no checkpoint)
 ```
-docker build --target hol-light-base -t hol-light-base .
+docker build --target hol-light-base -t hol-light-base hol-light-base
 ```
-
 if you want to use cache and already downloaded images, or use options
 `--pull` and `--no-cache` redownload images and updates
 ```
-docker build --pull --no-cache --target hol-light-base -t hol-light-base .
+docker build --pull --no-cache --target hol-light-base -t hol-light-base hol-light-base
 ```
 To run the container
 ```
@@ -60,7 +58,7 @@ docker build --target hol-light-ckpt -t hol-light-ckpt hol-light-base
 
 To start the container for building the checkpoints:
 ```
-docker run --name build-ckpt -h holbox -it -m 4G holbox-build screen
+docker run --name build-ckpt -h holbox -it -m 6G holbox-build screen
 ```
 
 ## Frequently used commands
@@ -71,9 +69,9 @@ dmtcp_coordinator -q -p 7779
 s
 ```
 
-In another screen terminal (`C-a n`)
+In another screen terminal (`C-a c`)
 ```
-dmtcp_launch -q -j -p 7779 ocaml -init make.ml
+dmtcp_launch -q -j -p 7779 ocaml -I `camlp5 -where` -init make.ml
 ```
 Once finished loading (before checkpoint)
 ```
