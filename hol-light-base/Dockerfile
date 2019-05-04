@@ -46,6 +46,8 @@ WORKDIR src/dmtcp
 # ARG DMTCP_VERSION=99c5941fe7465c614cd2971de554cc7a81280d79
 # Version 2019-02-22
 ARG DMTCP_VERSION=8b94c398881073a6c597d2495a0041301b494352
+# Version 2019-04-22
+ARG DMTCP_VERSION=cfe168e2539b60e29bbac27da9a8b78b77add2a6
 
 RUN curl -sL https://github.com/dmtcp/dmtcp/archive/$DMTCP_VERSION.tar.gz | tar xz --strip-components=1
 
@@ -77,7 +79,11 @@ WORKDIR hol-light
 # Version 2018-12-09
 # ARG HOL_LIGHT_VERSION=6c7df495cd1538bc5956ce004e64e73b071ab22d
 # Version 2019-02-17
+# ARG HOL_LIGHT_VERSION=f6c2710061c3e7f108924194073d0f9b7d8814c3
+# Version 2019-04-22
 ARG HOL_LIGHT_VERSION=f6c2710061c3e7f108924194073d0f9b7d8814c3
+# 2a6c5c210af7f7a6cd90c77d99740fc50fd3cb9c
+
 
 RUN curl -sL https://github.com/jrh13/hol-light/archive/$HOL_LIGHT_VERSION.tar.gz | tar xz --strip-components=1
 
