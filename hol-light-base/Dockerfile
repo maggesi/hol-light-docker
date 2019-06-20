@@ -13,13 +13,13 @@ FROM ocaml/opam2:debian-stable AS holbox-base
 USER root
 
 RUN apt-get update && \
-    apt-get -y install rlwrap
+    apt-get -y install m4 rlwrap
 
 USER opam
 
 RUN opam update && \
-    opam switch create 4.04.1 ocaml-base-compiler.4.04.1 && \
-    opam pin camlp5 6.17 && opam install camlp5
+    opam switch create 4.07.0 ocaml-base-compiler.4.07.0 && \
+    opam pin camlp5 7.06 && opam install num camlp5
 
 ### ---------------------------------------------------------------------------
 ### Target: holbox-build
