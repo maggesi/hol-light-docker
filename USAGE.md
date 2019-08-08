@@ -34,14 +34,17 @@ To run a freshly created container
    ```
    docker run --rm -it -v "$(pwd):/home/opam/work" holelpi
    ```
-This will open a bash session.
-Then run
+   This will open a bash session.
+3. Build the HOL Light parser:
+   ```
+   make clean && make
+   ```
 
 ## Checkpoints
 
 To start the container for building the checkpoints:
 ```
-docker run --name holelpi -h holelpi -it \
+docker run --name holelpi -h holelpi --rm -it \
            -v "$(pwd):/home/opam/work" holelpi screen
 ```
 
