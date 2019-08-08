@@ -1,64 +1,48 @@
-Docker image with HOL Light preinstalled
-========================================
+Preparing a Docker container with OCaml and Dmtcp for HOL Light
+===============================================================
 
 ## Important
 
-HOL Light with Multivariate Analysis **requires at least 2 Gb**
-(maybe more) of memory!  It might be necessary to set an
-appropriate memory limit in the docker configuration.
+HOL Light with Multivariate Analysis **requires at least 7 Gb** (maybe more)
+of memory!  It might be necessary to set an appropriate memory limit in the
+docker configuration.  See the Docker documentation.
 
 ## Notes
 
 - Based on Debian and use OCaml from the Debian distribution.
-- Dmtcp refuse to start under root: we use the "opam" user.
+- Dmtcp refuse to start under root: we run it under "opam" user.
 
-## Targets of the multistage build
+## Step 1: Build the Docker image.
 
-| Image tag         | Description                            |
-|----------------   |-------------------------------------   |
-| `holbox-base`     | Debian + ocaml/opam                    |
-| `holbox-build`    | Build tools + HOL Light + Dmtcp        |
-| `hol-light-base`  | Only HOL Light installed               |
-| `hol-light-ckpt`  | HOL Light + Dmtcp                      |
-
-## Manually built images with checkpointed binaries
-
-| Checkpoint                | Preloaded with                 |
-|------------------------   |-----------------------------   |
-| `hol-light-core`          | Core library                   |
-| `hol-light-multivariate`  | Multivariate analysis          |
-| `hol-light-complex`       | Complex analysis               |
-| `hol-light-hypercomplex`  | Quaternions                    |
-
-## How to build the images
-
-Build and test HOL Light "base" (no Dmtcp, no checkpoint)
+Build the image with the command:
 ```
-docker build --target hol-light-base -t hol-light-base hol-light-base
+docker build --target ocaml-dmtcp-elpi -t holelpi hol-light-base
 ```
-if you want to use cache and already downloaded images, or use options
-`--pull` and `--no-cache` redownload images and updates
+if you want to use cache and the already downloaded images, or use options
+`--pull` and `--no-cache` to redownload the images and clear the cache:
 ```
-docker build --pull --no-cache --target hol-light-base -t hol-light-base hol-light-base
-```
-To run the container
-```
-docker run --rm -it hol-light-base
+docker build --pull --no-cache --target hol-ready -t hol-ready hol-light-base
 ```
 
-Build the other images (prepare checkpointing)
-```
-docker build --target holbox-build -t holbox-build hol-light-base
-docker build --target hol-light-base -t hol-light-base hol-light-base
-docker build --target hol-light-elpi -t hol-light-elpi hol-light-base
-docker build --target hol-light-ckpt -t hol-light-ckpt hol-light-base
-```
+## Step 2: Test the image
+
+To run a freshly created container
+
+1. Go to the HOL Light directory:
+   ```cd ~/where-your-hol-light-installation-is```
+2. Start the container:
+   ```
+   docker run --rm -it -v "$(pwd):/home/opam/work" holelpi
+   ```
+This will open a bash session.
+Then run
 
 ## Checkpoints
 
 To start the container for building the checkpoints:
 ```
-docker run --name build-ckpt -h holbox -it -m 6G holbox-build screen
+docker run --name holelpi -h holelpi -it \
+           -v "$(pwd):/home/opam/work" holelpi screen
 ```
 
 ## Frequently used commands
@@ -69,7 +53,7 @@ dmtcp_coordinator -q -p 7779
 s
 ```
 
-In another screen terminal (`C-a c`)
+In another screen terminal (use `C-a c` to open a new screen terminal)
 ```
 dmtcp_launch -q -j -p 7779 ocaml -I `camlp5 -where` -init make.ml
 ```
@@ -79,7 +63,7 @@ load_path := "/src" :: !load_path;;
 Gc.compact();;
 ```
 
-Back into the first terminal (`C-a n`)
+Back into the first terminal (`C-a n` to cycle between screen terminals)
 ```
 c
 ```
@@ -132,26 +116,4 @@ Then checkpoint and move in a separate directory
 ```
 mkdir ckpt_hypercomplex
 mv ckpt*.dmtcp dmtcp_restart_script* ckpt_hypercomplex
-```
-## Build checkpoint images
-
-Commit the build-ckpt container into an image called holbox-ckpt
-```
-docker container commit build-ckpt holbox-ckpt
-```
-
-Build the images with the ckeckpointed binaries
-```
-docker build --target hol-light-core -t hol-light-core hol-light-core
-docker build --target hol-light-multivariate -t hol-light-multivariate hol-light-core
-docker build --target hol-light-complex -t hol-light-complex hol-light-core
-docker build --target hol-light-hypercomplex -t hol-light-hypercomplex hol-light-core
-```
-
-## Run the ckeckpointed images
-```
-docker container run --rm -h holbox -it hol-light-core
-docker container run --rm -h holbox -it hol-light-multivariate
-docker container run --rm -h holbox -it hol-light-complex
-docker container run --rm -h holbox -it hol-light-hypercomplex
 ```

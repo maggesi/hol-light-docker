@@ -1,144 +1,104 @@
 ### ===========================================================================
-### Dockerfile for a debian image with HOL Light preinstalled.
-### Marco Maggesi (University of Florence, Italy)
+### Container for running HOL Light.
+###
+### Debian image with OCaml, elpi, dmtcp and other tools installed.
+###
+### Notice HOL Light itself is not installed!
+### It will be used from an external directory.
 ### ===========================================================================
 
 ### ---------------------------------------------------------------------------
-### Target: holbox-base
-### Debian image with opam and minimal software installed (OCaml).
+### Usage
+###
+### Run these shell commands from the top directory of this repository.
+###
+### To build the container:
+###
+###   $ docker build --target holelpi -t holelpi Docker
+###
+### or, use options --pull --no-cache if you want to refresh the
+### downloaded or cached layers:
+###
+###   $ docker build --pull --no-cache --target holelpi -t holelpi Docker
+###
+### To start the container:
+###
+###   docker run --rm -it -v 'path-to-hol-dir:/home/opam/work' holelpi bash
 ### ---------------------------------------------------------------------------
 
-FROM ocaml/opam2:debian-stable AS holbox-base
+### ---------------------------------------------------------------------------
+### Install the needed Debian packages.
+### ---------------------------------------------------------------------------
+
+FROM ocaml/opam2:debian-stable AS ocaml-basics
 
 USER root
 
 RUN apt-get update && \
-    apt-get -y install m4 rlwrap
+    apt-get -y install build-essential git curl make m4 rlwrap screen tmux
+
+### ---------------------------------------------------------------------------
+### Prepare a working directory for the user.
+### ---------------------------------------------------------------------------
 
 USER opam
 
-RUN opam update && \
-    opam switch create 4.07.0 ocaml-base-compiler.4.07.0 && \
-    opam pin camlp5 7.06 && opam install num camlp5
+RUN mkdir -p /home/opam/work
 
 ### ---------------------------------------------------------------------------
-### Target: holbox-build
-### Build an image with essential build tools added and with HOL Light and
-### Dmtpc preinstalled.
+### Install the appropriate OCaml version and related dependencies.
+### NB: Create a new switch named hol-X.YY.Z
+### NB: Also install Elpi, to ensure that dependencies are already present
+###     in this layer.
 ### ---------------------------------------------------------------------------
 
-FROM holbox-base AS holbox-build
+WORKDIR /home/opam/opam-repository
 
-USER root
+RUN git pull && \
+    opam update && \
+    opam switch create hol-4.07.1 ocaml-base-compiler.4.07.1 && \
+    eval `opam config env` && \
+    opam install num camlp5 merlin elpi
 
-# Screen is needed for manual checkpointing.
-RUN apt-get -y install build-essential curl make screen tmux
+### ---------------------------------------------------------------------------
+### Install Dmtcp.
+### ---------------------------------------------------------------------------
+
+FROM ocaml-basics AS ocaml-dmtcp
 
 USER opam
 
-## --------------------------------------------------
-## Install Dmtcp (version 2018-11-12)
-
-RUN mkdir -p src/dmtcp
-
-WORKDIR src/dmtcp
-
-# ARG DMTCP_VERSION=99c5941fe7465c614cd2971de554cc7a81280d79
-# Version 2019-02-22
-ARG DMTCP_VERSION=8b94c398881073a6c597d2495a0041301b494352
-# Version 2019-04-22
+## Version 2019-04-22
 ARG DMTCP_VERSION=cfe168e2539b60e29bbac27da9a8b78b77add2a6
 
-RUN curl -sL https://github.com/dmtcp/dmtcp/archive/$DMTCP_VERSION.tar.gz | tar xz --strip-components=1
-
-RUN ./configure --prefix=/usr/local
-
-RUN make -j 2
+RUN mkdir -p /home/opam/src/dmtcp && \
+    cd /home/opam/src/dmtcp && \
+    curl -sL https://github.com/dmtcp/dmtcp/archive/$DMTCP_VERSION.tar.gz | \
+    tar xz --strip-components=1 && \
+    ./configure --prefix=/usr/local && make -j 2
 
 USER root
+
+WORKDIR /home/opam/src/dmtcp
 
 RUN make install
 
 USER opam
 
-## --------------------------------------------------
-## Install HOL Light
-
-WORKDIR /home/opam
-
-USER opam
-
-RUN mkdir -p hol-light
-
-WORKDIR hol-light
-
-# Version 2018-11-12
-# ARG HOL_LIGHT_VERSION=9a22c3609a43933c654b15aeeb4d549a25918b71
-# Version 2018-12-09
-# ARG HOL_LIGHT_VERSION=4a2bda88c305b77dc78164466c38bb2c4075c635
-# Version 2018-12-09
-# ARG HOL_LIGHT_VERSION=6c7df495cd1538bc5956ce004e64e73b071ab22d
-# Version 2019-02-17
-# ARG HOL_LIGHT_VERSION=f6c2710061c3e7f108924194073d0f9b7d8814c3
-# Version 2019-04-22
-ARG HOL_LIGHT_VERSION=f6c2710061c3e7f108924194073d0f9b7d8814c3
-# 2a6c5c210af7f7a6cd90c77d99740fc50fd3cb9c
-
-
-RUN curl -sL https://github.com/jrh13/hol-light/archive/$HOL_LIGHT_VERSION.tar.gz | tar xz --strip-components=1
-
-RUN eval `opam config env` && make
-
 ### ---------------------------------------------------------------------------
-### Target: hol-light-base
-### Image with HOL Light (and OCaml) installed and nothing else
-### (no Dmtpc, no checkpoints).
+### Install the development version of Elpi.
 ### ---------------------------------------------------------------------------
 
-FROM holbox-base AS hol-light-base
+FROM ocaml-dmtcp AS ocaml-dmtcp-elpi
 
-COPY --chown=opam:opam --from=holbox-build /home/opam/hol-light /home/opam/hol-light
-
-USER opam
-
-WORKDIR /home/opam/hol-light
-
-CMD eval `opam config env` && ocaml -I `camlp5 -where` -init make.ml
+RUN opam pin add elpi git+https://github.com/lpcic/elpi && \
+    opam update && \
+    opam install elpi
 
 ### ---------------------------------------------------------------------------
-### Target: hol-light-elpi
-### Image with HOL Light (and OCaml) and Elpi (lambda-prolog
-### interpreter) installed and nothing else (no Dmtpc, no
-### checkpoints).
+### Startup configuration.
 ### ---------------------------------------------------------------------------
 
-FROM hol-light-base AS hol-light-elpi
+WORKDIR /home/opam/work
 
-USER root
-
-RUN apt-get install -y m4
-
-USER opam
-
-RUN eval `opam config env` && opam install -y elpi
-
-WORKDIR /home/opam/hol-light
-
-CMD eval `opam config env` && ocaml -I `camlp5 -where` -init make.ml
-
-### ---------------------------------------------------------------------------
-### Target: hol-light-ckpt
-### Image with HOL Light (and OCaml) and Dmtcp (but no checkpoints).
-### ---------------------------------------------------------------------------
-
-FROM hol-light-base AS hol-light-ckpt
-
-# Screen is needed for manual checkpointing.
-USER root
-RUN apt-get -y install screen tmux
-USER opam
-
-COPY --from=holbox-build /usr/local/ /usr/local/
-
-ENTRYPOINT [""]
-CMD ["bash"]
+# CMD eval `opam config env` && ocaml -I `camlp5 -where` -init make.ml
