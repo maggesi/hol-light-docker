@@ -1,2 +1,2 @@
-# hol-light-infrastructure
-Scripts for HOL Light (installation, deployment, checkpointing)
+# hol-light-docker
+Scripts for HOL Light (installation, deployment, checkpointing) on Docker.
